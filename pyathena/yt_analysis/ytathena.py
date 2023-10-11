@@ -54,8 +54,10 @@ def _dkinetic_energy(field,data):
     return 0.5*data['gas','dvelocity_magnitude']**2*data['gas','density']
 
 # magnetic fields
+def _mag_press(field,data):
+        return (data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc1"]**2)/(8.0*np.pi)
 def _mag_pok(field,data):
-        return data["gas","magnetic_pressure"]/kboltz
+        return data["athena_pp","magnetic_pressure"]/kboltz
 
 # metals
 def _metallicity(field,data):
@@ -85,7 +87,7 @@ def _total_kinetic_energy(field, data):
     return 0.5*data["cell_mass"]*data["velocity_magnitude"]**2
 
 def _total_magnetic_energy(field, data):
-    return data["magnetic_field_magnitude"]**2*data["cell_volume"]/8.0/np.pi
+    return data["athena_pp","magnetic_pressure"]*data["cell_volume"]
     
 #Cosmic Rays
 vmax = YTQuantity(8000,"km/s")
@@ -158,7 +160,9 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
         ds.add_field(("gas","dkinetic_energy"),function=_dkinetic_energy,sampling_type='cell', \
           units='erg/cm**3',display_name=r'$E_k$',force_override=True)
     if mhd:
-        ds.add_field(("gas","mag_pok"),function=_mag_pok,sampling_type='cell', \
+        ds.add_field(("athena_pp","magnetic_pressure"),function=_mag_press,sampling_type='cell', \
+          units='erg/cm**3',display_name=r'$P_B$')
+        ds.add_field(("athena_pp","mag_pok"),function=_mag_pok,sampling_type='cell', \
           units='K*cm**(-3)',display_name=r'$P_{\rm mag}/k_{\rm B}$')
         ds.add_field(("gas","total_magnetic_energy"), function=_total_magnetic_energy, \
           sampling_type='cell', \
@@ -194,6 +198,6 @@ def ytload(filename):
     tigress_unit_system['velocity']='km/s'
     tigress_unit_system['magnetic_field']='uG'
     ds=load(filename,units_override=unit_base,unit_system=tigress_unit_system)
-    add_yt_fields(ds,cooling=True,mhd=False,rotation=False,cr=True)
+    add_yt_fields(ds,cooling=True,mhd=True,rotation=False,cr=True)
     
     return ds
