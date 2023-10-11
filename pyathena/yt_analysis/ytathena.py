@@ -1,5 +1,6 @@
 from yt import add_field
 from yt import YTQuantity
+from yt import UnitSystem, load
 from yt.utilities.physical_constants import \
     mh, \
     me, \
@@ -10,6 +11,7 @@ from yt.utilities.physical_constants import \
 import pickle as p
 import numpy as np
 import pyathena as pa
+
 
 # basic qunatities with renormalization
 def _ndensity(field, data):
@@ -72,9 +74,9 @@ def _radius(field, data):
     return np.sqrt(data['x']**2+data['y']**2+data['z']**2)
 
 def _velocity_r(field, data):
-    return data['velocity_x']*data['x']/data['radius']+\
-           data['velocity_y']*data['y']/data['radius']+\
-           data['velocity_z']*data['z']/data['radius']
+    return data['velocity_x']*data['x']/data['gas','radius']+\
+           data['velocity_y']*data['y']/data['gas','radius']+\
+           data['velocity_z']*data['z']/data['gas','radius']
 
 def _momentum_r(field, data):
     return data["cell_mass"]*data["velocity_r"]
@@ -84,6 +86,25 @@ def _total_kinetic_energy(field, data):
 
 def _total_magnetic_energy(field, data):
     return data["magnetic_field_magnitude"]**2*data["cell_volume"]/8.0/np.pi
+    
+#Cosmic Rays
+vmax = YTQuantity(8000,"km/s")
+
+def _P_c_0(field,data):
+    return data["0-Ec"]*(1/(3*kboltz))
+
+def _P_c_1(field,data):
+    return data["1-Ec"]*(1/(3*kboltz))
+
+
+def _sigma_diff1_0(field,data):
+    return data["0-Sigma_diff1"] / (vmax)
+
+def _sigma_diff1_1(field,data):
+    return data["1-Sigma_diff1"] / (vmax)
+
+
+
 
 unit_base={"length_unit": (1.0,"pc"), 
            "time_unit": (1.0,"s*pc/km"), 
@@ -101,7 +122,7 @@ def get_scalars(ds):
     return scal_fields
 
 
-def add_yt_fields(ds,cooling=True,mhd=True,rotation=True):
+def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
     ds.add_field(("gas","nH"),function=_ndensity,sampling_type='cell', \
       units='cm**(-3)',display_name=r'$n_{\rm H}$')
     ds.add_field(("gas","ram_pok_z"),function=_ram_pok_z,sampling_type='cell', \
@@ -142,6 +163,11 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True):
         ds.add_field(("gas","total_magnetic_energy"), function=_total_magnetic_energy, \
           sampling_type='cell', \
           units='erg', display_name=r'$E_{\rm mag}$',force_override=True)
+    if cr:
+        ds.add_field(("athena_pp","0-Pc"), function=_P_c_0, sampling_type="cell", units="K/cm**3",display_name=r'$P_{c,GeV}/k_{\rm B}$')
+        ds.add_field(("athena_pp","1-Pc"), function=_P_c_1, sampling_type="cell", units="K/cm**3",display_name=r'$P_{c,MeV}/k_{\rm B}$')
+
+        
 
     scal_fields=get_scalars(ds)
     if len(scal_fields)>0:
@@ -164,10 +190,10 @@ def ytload(filename):
                "velocity_unit": (1.0,"km/s"),
                "magnetic_unit": (5.4786746797e-07,"gauss")}
 
-    tigress_unit_system=yt.UnitSystem('tigress','pc','Msun','Myr',)
+    tigress_unit_system=UnitSystem('tigress','pc','Msun','Myr',)
     tigress_unit_system['velocity']='km/s'
     tigress_unit_system['magnetic_field']='uG'
-    ds=yt.load(filename,units_override=unit_base,unit_system=tigress_unit_system)
-    add_yt_fields(ds,cooling=True,mhd=True,rotation=False)
+    ds=load(filename,units_override=unit_base,unit_system=tigress_unit_system)
+    add_yt_fields(ds,cooling=True,mhd=False,rotation=False,cr=True)
     
     return ds
