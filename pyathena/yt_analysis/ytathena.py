@@ -168,8 +168,8 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
           sampling_type='cell', \
           units='erg', display_name=r'$E_{\rm mag}$',force_override=True)
     if cr:
-        ds.add_field(("athena_pp","0-Pc"), function=_P_c_0, sampling_type="cell", units="K/cm**3",display_name=r'$P_{c,GeV}/k_{\rm B}$')
-        ds.add_field(("athena_pp","1-Pc"), function=_P_c_1, sampling_type="cell", units="K/cm**3",display_name=r'$P_{c,MeV}/k_{\rm B}$')
+        ds.add_field(("athena_pp","0-Pc"), function=_P_c_0, sampling_type="cell", units='K*cm**(-3)',display_name=r'$P_{c,GeV}/k_{\rm B}$')
+        ds.add_field(("athena_pp","1-Pc"), function=_P_c_1, sampling_type="cell", units='K*cm**(-3)',display_name=r'$P_{c,MeV}/k_{\rm B}$')
 
         
 
