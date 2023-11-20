@@ -55,9 +55,13 @@ def _dkinetic_energy(field,data):
 
 # magnetic fields
 def _mag_press(field,data):
-        return (data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc1"]**2)/(8.0*np.pi)
+        return (data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc2"]**2+data["athena_pp","Bcc3"]**2)/(8.0*np.pi)
+def _mag_stress_z(field,data):
+        return (data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc2"]**2-data["athena_pp","Bcc3"]**2)/(8.0*np.pi)
 def _mag_pok(field,data):
         return data["athena_pp","magnetic_pressure"]/kboltz
+def _mag_pok_z(field,data):
+        return data["athena_pp","magnetic_stress_z"]/kboltz
 
 # metals
 def _metallicity(field,data):
@@ -161,9 +165,13 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
           units='erg/cm**3',display_name=r'$E_k$',force_override=True)
     if mhd:
         ds.add_field(("athena_pp","magnetic_pressure"),function=_mag_press,sampling_type='cell', \
-          units='erg/cm**3',display_name=r'$P_B$')
+          units='erg/cm**3',display_name=r'$P_M$')
+        ds.add_field(("athena_pp","magnetic_stress_z"),function=_mag_stress_z,sampling_type='cell', \
+          units='erg/cm**3',display_name=r'$P_mag,z$')
         ds.add_field(("athena_pp","mag_pok"),function=_mag_pok,sampling_type='cell', \
           units='K*cm**(-3)',display_name=r'$P_{\rm mag}/k_{\rm B}$')
+        ds.add_field(("athena_pp","mag_pok_z"),function=_mag_pok_z,sampling_type='cell', \
+          units='K*cm**(-3)',display_name=r'$P_{\rm mag,z}/k_{\rm B}$')
         ds.add_field(("gas","total_magnetic_energy"), function=_total_magnetic_energy, \
           sampling_type='cell', \
           units='erg', display_name=r'$E_{\rm mag}$',force_override=True)
