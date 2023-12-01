@@ -111,6 +111,8 @@ def _sigma_diff1_1(field,data):
 
 def _grad_Pc(field,data):
     return np.sqrt(data["0-Pc_gradient_x"]**2 + data["0-Pc_gradient_y"]**2 + data["0-Pc_gradient_z"]**2)
+def _grad_Pc_norm(field,data):
+    return data["grad_Pc"]/data["0-Pc"]
 def _grad_Pc_B(field,data):
     bmag    = np.sqrt(data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc2"]**2+data["athena_pp","Bcc3"]**2)
     bx_norm = data["athena_pp","Bcc1"] / bmag
@@ -186,8 +188,9 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
         ds.add_field(("athena_pp","0-Pc"), function=_P_c_0, sampling_type="cell", units='K*cm**(-3)',display_name=r'$P_{c,GeV}/k_{\rm B}$')
         ds.add_field(("athena_pp","1-Pc"), function=_P_c_1, sampling_type="cell", units='K*cm**(-3)',display_name=r'$P_{c,MeV}/k_{\rm B}$')
         ds.add_gradient_fields(("athena_pp", "0-Pc"))
-        ds.add_field(("athena_pp","grad_Pc"),function=_grad_Pc, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$ \nabla P_{c,MeV}/k_{\rm B}$')
-        ds.add_field(("athena_pp","grad_Pc_dotB"),function=_grad_Pc_B, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$|\nabla P_{c,MeV}/k_{\rm B} \cdot \hat{B}|$')
+        ds.add_field(("athena_pp","grad_Pc"),function=_grad_Pc, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$ \nabla P_{c,GeV}/k_{\rm B}$')
+                ds.add_field(("athena_pp","grad_Pc_norm"),function=_grad_Pc_norm, sampling_type="cell", units='pc**(-1)', display_name=r'$ \nabla P_{c,GeV}/P_{c,GeV}$')
+        ds.add_field(("athena_pp","grad_Pc_dotB"),function=_grad_Pc_B, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$|\nabla P_{c,GeV}/k_{\rm B} \cdot \hat{B}|$')
 
     scal_fields=get_scalars(ds)
     if len(scal_fields)>0:
