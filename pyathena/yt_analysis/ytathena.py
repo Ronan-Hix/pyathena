@@ -113,6 +113,8 @@ def _grad_Pc(field,data):
     return np.sqrt(data["0-Pc_gradient_x"]**2 + data["0-Pc_gradient_y"]**2 + data["0-Pc_gradient_z"]**2)
 def _grad_Pc_norm(field,data):
     return data["grad_Pc"]/data["0-Pc"]
+def _grad_Pc_dotB_length(field,data):
+    return data["0-Pc"]/data["grad_Pc_dotB"]
 def _grad_Pc_dotB_norm(field,data):
     return data["grad_Pc_dotB"]/data["0-Pc"]
 def _grad_Pc_B(field,data):
@@ -193,8 +195,9 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
         ds.add_field(("athena_pp","grad_Pc"),function=_grad_Pc, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$ \nabla P_{c,GeV}/k_{\rm B}$')
         ds.add_field(("athena_pp","grad_Pc_norm"),function=_grad_Pc_norm, sampling_type="cell", units='pc**(-1)', display_name=r'$ \nabla P_{c,GeV}/P_{c,GeV}$')
         ds.add_field(("athena_pp","grad_Pc_dotB"),function=_grad_Pc_B, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$|\nabla P_{c,GeV}/k_{\rm B} \cdot \hat{B}|$')
-        ds.add_field(("athena_pp","grad_Pc_dotB_norm"),function=_grad_Pc_B_norm, sampling_type="cell", units='pc**(-1)', display_name=r'$|\nabla P_{c,GeV} \cdot \hat{B}|/P_{c,GeV}$')
-
+        ds.add_field(("athena_pp","grad_Pc_dotB_norm"),function=_grad_Pc_dotB_norm, sampling_type="cell", units='pc**(-1)', display_name=r'$|\nabla P_{c,GeV} \cdot \hat{B}|/P_{c,GeV}$')
+        ds.add_field(("athena_pp","grad_Pc_dotB_length"),function=_grad_Pc_dotB_length, sampling_type="cell", units='pc', display_name=r'$P_{c,GeV}/|\nabla P_{c,GeV} \cdot \hat{B}|$')
+        
     scal_fields=get_scalars(ds)
     if len(scal_fields)>0:
         ds.add_field(("gas","metallicity"),function=_metallicity,sampling_type='cell', \
