@@ -93,6 +93,9 @@ def _total_kinetic_energy(field, data):
 def _total_magnetic_energy(field, data):
     return data["athena_pp","magnetic_pressure"]*data["cell_volume"]
     
+def _B_z_angle(field,data):
+    return np.arccos(data["athena_pp","Bcc3"]/(np.sqrt(data["athena_pp","Bcc1"]**2+data["athena_pp","Bcc2"]**2+data["athena_pp","Bcc3"]**2)))
+    
 #Cosmic Rays
 vmax = YTQuantity(8000,"km/s")
 
@@ -232,6 +235,8 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
         ds.add_field(("gas","total_magnetic_energy"), function=_total_magnetic_energy, \
           sampling_type='cell', \
           units='erg', display_name=r'$E_{\rm mag}$',force_override=True)
+        ds.add_field(("athena_pp","B_z_angle"),function=_B_z_angle,sampling_type='cell', \
+          units='rad',display_name=r'$\Theta_{B_{z}}')
     if cr:
         ds.add_field(("athena_pp","0-Pc"), function=_P_c_0, sampling_type="cell", units='K*cm**(-3)',display_name=r'$P_{c,GeV}/k_{\rm B}$')
         ds.add_field(("athena_pp","1-Pc"), function=_P_c_1, sampling_type="cell", units='K*cm**(-3)',display_name=r'$P_{c,MeV}/k_{\rm B}$')
