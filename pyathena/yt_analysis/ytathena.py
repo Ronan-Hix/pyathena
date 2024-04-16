@@ -103,11 +103,21 @@ def _P_c_1(field,data):
     return data["1-Ec"]*(1/(3*kboltz))
 
 
-def _sigma_diff1_0(field,data):
-    return data["0-Sigma_diff1"] / (vmax)
+# def _sigma_diff1_0(field,data):
+#     print(field)
+#     return data["0-Sigma_diff1"] / (vmax)
+# def _sigma_diff2_0(field,data):
+#     return data["0-Sigma_diff2"] / (vmax)
+# def _sigma_diff3_0(field,data):
+#     return data["0-Sigma_diff3"] / (vmax)
 
-def _sigma_diff1_1(field,data):
-    return data["1-Sigma_diff1"] / (vmax)
+# def _sigma_diff1_1(field,data):
+#     return data["1-Sigma_diff1"] / (vmax)
+# def _sigma_diff2_1(field,data):
+#     return data["1-Sigma_diff2"] / (vmax)
+# def _sigma_diff3_1(field,data):
+#     return data["1-Sigma_diff3"] / (vmax)
+
 
 def _grad_Pc(field,data):
     return np.sqrt(data["0-Pc_gradient_x"]**2 + data["0-Pc_gradient_y"]**2 + data["0-Pc_gradient_z"]**2)
@@ -124,6 +134,40 @@ def _grad_Pc_B(field,data):
     bz_norm = data["athena_pp","Bcc3"] / bmag
     return abs(data["0-Pc_gradient_x"]*bx_norm + data["0-Pc_gradient_y"]*by_norm +data["0-Pc_gradient_z"]*bz_norm)
 
+def _vdiff_z(field,data):
+    #Compute the CR pressure gradients in the x-,y-,z- directions
+    GradPcx = data['0-Pc_gradient_x']
+    GradPcy = data['0-Pc_gradient_y']
+    GradPcz = data['0-Pc_gradient_z']
+
+    #Read magnetic field variables
+    Bx = data['Bcc1']
+    By = data['Bcc2']
+    Bz = data['Bcc3']
+
+    #Compute angles to make the rotation to the magnetic field frame of reference
+    bxby = np.sqrt(Bx**2 + By**2)
+    btot = np.sqrt(Bx**2 + By**2 + Bz**2)
+    bangle0 = bxby/btot
+    bangle1 = Bz/btot
+    bangle2 = By/bxby
+    bangle3 = Bx/bxby
+
+    #Compute the three components of the CR pressure gradient in the magnetic field frame of reference
+    newv1 =  bangle3 * GradPcx + bangle2 * GradPcy
+    GradPcBx = bangle0 * newv1 + bangle1 * GradPcz
+    GradPcBy = -bangle2 * GradPcx + bangle3 * GradPcy
+    GradPcBz = -bangle1 * newv1 + bangle0 * GradPcz
+
+    #Compute the three components of the diffusion speed in the magnetic field frame of reference [vd = -(\nabla P)/(4P)/sigma]
+    vdBx = -GradPcBx/(data['0-Sigma_diff1'])/(4*data['0-Pc'])  
+    vdBy = -GradPcBy/(data['0-Sigma_diff2'])/(4*data['0-Pc'])  
+    vdBz = -GradPcBz/(data['0-Sigma_diff3'])/(4*data['0-Pc'])  
+
+    #Compute the components of the diffusion speed along the z direction (the velocity is in code units)
+    newv1 = (bangle0 * vdBx) - (bangle1 * vdBz)
+    vdz = (bangle1 * vdBx + bangle0 * vdBz) 
+    return vdz
 
 unit_base={"length_unit": (1.0,"pc"), 
            "time_unit": (1.0,"s*pc/km"), 
@@ -197,6 +241,7 @@ def add_yt_fields(ds,cooling=True,mhd=True,rotation=True,cr=False):
         ds.add_field(("athena_pp","grad_Pc_dotB"),function=_grad_Pc_B, sampling_type="cell", units='K*cm**(-3)*pc**(-1)', display_name=r'$|\nabla P_{c,GeV}/k_{\rm B} \cdot \hat{B}|$')
         ds.add_field(("athena_pp","grad_Pc_dotB_norm"),function=_grad_Pc_dotB_norm, sampling_type="cell", units='pc**(-1)', display_name=r'$|\nabla P_{c,GeV} \cdot \hat{B}|/P_{c,GeV}$')
         ds.add_field(("athena_pp","grad_Pc_dotB_length"),function=_grad_Pc_dotB_length, sampling_type="cell", units='pc', display_name=r'$P_{c,GeV}/|\nabla P_{c,GeV} \cdot \hat{B}|$')
+        ds.add_field(("athena_pp","vdiff_z"),function=_vdiff_z,sampling_type="cell",units="km/s", display_name=r"v_{diff}")
         
     scal_fields=get_scalars(ds)
     if len(scal_fields)>0:
